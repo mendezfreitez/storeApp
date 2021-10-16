@@ -1,0 +1,682 @@
+<template>
+  <div>
+    <b-modal id="modalProducto"
+    :title="ElTituloModal"
+    header-bg-variant="dark"
+    header-text-variant="light"
+    cancel-variant="outline-danger"
+    ok-variant="outline-primary"
+    ok-title="Agregar Categoría"
+    cancel-title="Cerrar"
+    @ok="onSubmit"
+    centered
+    >
+        <div class="mt-3 pl-2 pr-2">
+            <b-form @reset="onReset" v-if="show">
+                <div>
+                  <!-- Styled -->
+                  <b-form-file
+                    class="text-left border-bottom-0 mb-3"
+                    id="Imagenes_Array"
+                    accept="image/*"
+                    multiple
+                    :file-name-formatter="formatNames"
+                    v-model="arrayImagenes"
+                    @blur="cambioUnInput"
+                    placeholder="Imágenes Producto"
+                    drop-placeholder="Drop file here..."
+                    size="sm"
+                  ></b-form-file>
+                </div>
+                
+                <b-form-group id="input-group-1">
+                  <b-form-input
+                    @keydown="cambioUnInput"
+                    id="input-1"
+                    v-model="form.nombre"
+                    type="text"
+                    required
+                    placeholder="Nombre Producto"
+                    autocomplete="off"
+                    name="nombre"
+                    size="sm"
+                  ></b-form-input>
+                </b-form-group>
+
+                <b-form-group id="input-group-2">   
+                  <b-form-input
+                    @keydown="cambioUnInput"
+                    id="input-2"
+                    v-model="form.descripcion"
+                    required
+                    placeholder="Descripción Producto"
+                    autocomplete="off"
+                    type="text"
+                    name="descripcion"
+                    size="sm"
+                  ></b-form-input>
+                </b-form-group>
+
+                <b-form-group>
+                  <b-form-select
+                    v-model="form.categoria"
+                    :options="options"
+                    @change="cambioUnInput"
+                    size="sm"
+                  ></b-form-select>
+                </b-form-group>
+                
+                <div>
+                  <select id="selectColor" v-model="nombreColor" @change="cambioColor" style="width:230px!important; display:inline-block!important;" class="form-control form-control-sm mb-3" aria-label=".form-select-sm example">
+                    <option :value="color.codigo + '-' + color.nombre" v-for="(color, index) in colores" :key="index">{{color.nombre}} </option>
+                  </select>
+                  <div id="circuloColor" class="rounded-3" :style="{backgroundColor:codigoColor}" :hidden="hiddenCodigoColor"></div>
+                </div>
+
+                <b-form-group id="input-group-4">
+                  <b-form-input
+                    @keydown="cambioUnInput"
+                    id="input-4"
+                    v-model="form.cantidad"
+                    required
+                    placeholder="Cantidad"
+                    type="number"
+                    name="cantidad" 
+                    size="sm"
+                  ></b-form-input>
+                </b-form-group>
+
+                <b-form-group id="input-group-3">
+                  <b-form-input
+                    @change="cambioInputPrecio"
+                    id="input-precio"
+                    autocomplete="off"
+                    v-model="form.precio"
+                    required
+                    placeholder="Precio"
+                    type="number"
+                    name="precio"
+                    size="sm"
+                  ></b-form-input>
+                </b-form-group>
+
+                <b-card class="mb-3 pb-2 pl-2">
+                   <b-form-group class="mb-2">
+                    <b-form-checkbox :disabled="descuentoHabilitado" v-model="form.aplicaDescuento" @change="cambioAplicaDescuento" name="check-button" switch size="lg" class=" mt-1">
+                      Aplica Descuento
+                    </b-form-checkbox>
+                   </b-form-group>                  
+                  <div :hidden="!form.aplicaDescuento" class="pr-2">
+                    <b-card class="pl-2 pr-2 mb-2">
+                      <div class="w-50 pr-1" style="display:inline-block;">
+                        <b-form-group id="input-group-5" class="mb-0">
+                          <label class="mb-0 lbl"><i>Fecha Inicio</i></label>
+                          <b-form-datepicker
+                          label-no-date-selected="Fecha Inicio"
+                          size="sm"
+                          name="desde"
+                          id="input-desde"
+                          v-model="form.descuento.desde"
+                          locale="es"
+                          :date-format-options="{ year: 'numeric', month: 'numeric', day: 'numeric' }">
+                          </b-form-datepicker>
+                        </b-form-group>
+                      </div>
+
+                      <div class="w-50 pl-1" style="display:inline-block;">
+                        <b-form-group id="input-group-6" class="mb-0">
+                          <label class="mb-0 lbl"><i>Fecha Fin</i></label>
+                          <b-form-datepicker
+                            label-no-date-selected="Fecha Fin"
+                            size="sm"
+                            name="hasta"
+                            id="input-hasta"
+                            v-model="form.descuento.hasta"
+                            locale="es"
+                            :date-format-options="{ year: 'numeric', month: 'numeric', day: 'numeric' }">
+                            </b-form-datepicker>
+                        </b-form-group>
+                      </div>
+                    </b-card>
+
+                      <b-card class="pl-2 pr-2">
+                          <div class="w-50" id="parte1" style="display:inline-block;">
+                            <b-form-group class="mb-0">
+                              <b-form-checkbox
+                              v-model="form.descuento.tipoPorcentaje"
+                              @change="cambioTipoDescuento"
+                              name="check-button"
+                              switch
+                              size="lg"
+                              style="display:inline-block; width:130px;"
+                              >
+                                Porcentaje
+                              </b-form-checkbox>
+                              
+                              <b-form-checkbox
+                              v-model="form.descuento.tipoMonto"
+                              @change="cambioTipoDescuento"
+                              name="check-button"
+                              switch
+                              size="lg"
+                              style="display:inline-block;">
+                                Monto
+                              </b-form-checkbox>
+                            </b-form-group>
+                          </div>
+                          <div class="w-50" id="parte2" style="display:inline-block;">
+                                <b-form-group :hidden="form.descuento.tipoMonto" class="mb-0">
+                                  <b-input-group size="sm" prepend="%" class="mb-2">
+                                    <b-form-input
+                                      @keyup="cambioDescuentoPorc"
+                                      type="number"
+                                      :min="0"
+                                      :max="100"
+                                      id="inline-form-input-porcentaje"
+                                      placeholder="Porcentaje"
+                                      v-model="form.descuento.porcentajeDescuento"
+                                    ></b-form-input>
+                                  </b-input-group>
+                                </b-form-group>
+                                <b-form-group :hidden="form.descuento.tipoPorcentaje" class="mb-0">
+                                  <b-input-group size="sm" prepend="CLP" class="mb-2">
+                                    <b-form-input
+                                      @keyup="cambioDescuentoMonto"
+                                      type="number"
+                                      :min="0"
+                                      :max="form.precio"
+                                      id="inline-form-input-monto"
+                                      placeholder="Monto"
+                                      v-model="form.descuento.montoDescuento"
+                                    ></b-form-input>
+                                  </b-input-group>
+                                </b-form-group>
+                          </div>
+                      </b-card>
+                  </div>
+                </b-card>
+            </b-form>
+
+            <Modal ref="elModal" :tituloModal="form.nombre" :textoModal="form.descripcion"></Modal>
+        </div>
+
+        <template v-slot:modal-footer>
+            <div :hidden="!oculto" class="text-center mt-3">
+                <!-- <b-button :disabled="activoBtnRegistrar" type="button" @click="vistaPreviaModal" class="mr-2" variant="outline-success" size="sm">Vista Previa</b-button> -->
+                <b-button @click="onReset" class="mr-1" variant="outline-danger" size="sm">Limpiar</b-button>
+                <b-button :disabled="activoBtnRegistrar" type="button" @click="onSubmit" class="ml-1" variant="outline-primary" size="sm">Guardar</b-button>
+
+            </div>
+            <div :hidden="oculto" class="mt-3 mb-1" style=" width:100%!important; height:46px!important;">
+              <div class="preloader"></div>
+            </div>
+        </template>
+    </b-modal>
+  </div>
+</template>
+
+<script>
+import firebase from 'firebase/app'
+import Modal from './Modal'
+import InputFotos from '../InputFotos'
+import axios from 'axios'
+import { mapMutations, mapState } from 'vuex';
+
+var urlImagen = 'https://raw.githubusercontent.com/mendezfreitez/StoreApp_BackEnd/master/imagenes'
+var arregloImagenes = [];
+export default {
+    name:'NuevoProducto',
+    components:{
+        InputFotos, Modal
+    },
+    data() {  
+      return {
+        cantImgs: '',
+        form: {
+          color: "",
+          nombre: '',
+          descripcion: '',
+          categoria: '',
+          precio: '',
+          cantidad: '',
+          nombreImags: [],
+          aplicaDescuento: false,
+          idProducto:'',
+          descuento:{
+            desde: '',
+            hasta:'',
+            tipoPorcentaje:true,
+            tipoMonto:false,
+            montoDescuento:'',
+            porcentajeDescuento:''
+          }
+        },
+        arrayImagenes:[],
+        arrayImagenes_:[],
+        enlacesUrl:[],
+        show: true,
+        activoVer:true,
+        activoBtnRegistrar: true,
+        descuentoHabilitado:true,
+        options: [],
+        // optionsColores: [],
+        RegistroEdicion:'',
+        oculto:true,
+        codigoColor: '#FFF',
+        nombreColor: 'Blanco',
+        hiddenCodigoColor:true
+      }
+    },
+    computed:{
+        ...mapState(['productosTodos_', 'urlProductos', 'colores', 'url', 'categorias'])
+    },
+    props:{
+        propsImg:{
+            id:Number,
+            src:String,
+            thumbnail:String
+        },
+        arregloFinal: Array,
+        producto: undefined,
+        // idProducto :'',
+        ElTituloModal: String
+    }, 
+    methods: {
+      ...mapMutations(['updateProductosTodos']),
+      cambioColor(){
+        if(document.getElementById('selectColor').value != ''){
+          this.codigoColor = document.getElementById('selectColor').value.split('-')[0]
+          this.nombreColor = document.getElementById('selectColor').value.split('-')[1]
+          this.form.color = { nombre:document.getElementById('selectColor').value.split('-')[1], codigo:document.getElementById('selectColor').value.split('-')[0] }          
+        }
+        else{ this.codigoColor = this.nombreColor = this.form.color = '' }
+
+        if(this.codigoColor != '') { this.hiddenCodigoColor = false }
+        else{ this.hiddenCodigoColor = true }
+      },
+      onSubmit(evt) {
+        // console.log({'this.arrayImagenes_':this.arrayImagenes_, 'this.arrayImagenes':this.arrayImagenes})
+        // return
+        if (this.form.idProducto === undefined) { this.form.idProducto = '' }
+
+        axios.post(`${this.url}NuevoProducto`, this.form, { headers: {'content-type':'application/json'} }).then(function (resp) {
+          this.guardarImagenes(this.arrayImagenes_, this.arrayImagenes, resp.data.id, this.form.color, resp.data.producto.color);
+          
+          axios.post(`${this.url}traerTodos`,{ id:'' }).then(function(res){
+            this.updateProductosTodos(res.data)
+          }.bind(this));
+        }.bind(this));
+      },
+      onReset(evt) {
+        this.form.nombre = ''
+        this.form.descripcion = ''
+        this.form.categoria = null
+        this.form.precio = null
+        this.form.cantidad = null
+        this.form.nombreImags = null
+        this.activoBtnRegistrar = true
+        this.arrayImagenes = []
+        this.show = false
+        this.form.descuento.desde = ''
+        this.form.descuento.hasta = ''
+        this.form.descuento.tipoPorcentaje = true
+        this.form.descuento.tipoMonto = false
+        this.form.descuento.montoDescuento = ''
+        this.form.descuento.porcentajeDescuento = ''
+        this.form.aplicaDescuento = false
+        this.descuentoHabilitado = true
+        this.$nextTick(() => {
+            this.show = true
+        })
+      },
+      cambiar(){
+        let that = this;
+        this.$watch(() => {
+          if(that.arrayImagenes != that.$refs.inputFoto.file){
+            // this.form.dataImags = this.$refs.inputFoto.file
+            that.arrayImagenes = that.$refs.inputFoto.file
+            that.form.dataImags = that.$refs.inputFoto.file;
+            const toBase64 = file => new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = error => reject(error);
+            });
+            
+            async function convert_Base64(){
+              for(var t = 0; t < that.arrayImagenes.length; t++){
+                that.form.dataImags[t] = (await toBase64(that.$refs.inputFoto.file[t]));
+                arregloImagenes.push({ id:that.form.nombreImags[t], src:that.form.dataImags[t], thumbnail:that.form.dataImags[t] })
+              }
+            }
+            convert_Base64();
+          }
+        });
+      },
+      vistaPreviaModal(){
+        // console.log(this.arrayImagenes_)
+        this.$refs.elModal.arrayImagenes = this.arrayImagenes_
+        this.$bvModal.show("modal_1");
+      },
+      formatNames(files) {
+          // console.log({files});
+        if (files.length === 1) {
+          return files[0].name
+        } else {
+          return `${files.length} Imágenes Seleccionadas`;
+        }
+      },
+      habilitarBoton(){
+        var archivos = document.querySelector("#Imagenes_Array").files;
+        if(archivos.length > 0){
+          this.activoVer = false;
+        }
+        else{
+          this.activoVer = true;
+        }
+      },
+      cambioUnInput(){
+        if(this.form.nombre != '' && this.form.descripcion != '' && this.form.precio != '' && this.form.categoria != null && this.form.cantidad != '' && this.nombreColor != null && this.nombreColor != ''){
+          this.activoBtnRegistrar = false
+          if(this.form.aplicaDescuento === true){
+            if(this.form.descuento.desde != '' && this.form.descuento.hasta != '' && this.form.descuento.montoDescuento != '') { this.activoBtnRegistrar = false } //DISABLED="FALSE" --> BTN HABILITADO
+            else{ this.activoBtnRegistrar = true } //DISABLED="TRUE" --> BTN DESHABILITADO
+          }
+          else{ this.activoBtnRegistrar = false } //DISABLED="FALSE" --> BTN HABILITADO
+        }
+        else{ this.activoBtnRegistrar = true }
+
+        if(this.form.precio != '') { this.descuentoHabilitado = false } //DISABLED="FALSE" --> BTN HABILITADO
+        else{
+          this.descuentoHabilitado = true //DISABLED="TRUE" --> BTN DESHABILITADO
+          this.form.descuento.tipoPorcentaje = true
+          this.form.descuento.tipoMonto = false
+          this.form.descuento.desde = ''
+          this.form.descuento.hasta = ''
+          this.form.descuento.montoDescuento = ''
+          this.form.descuento.porcentajeDescuento = ''
+          this.form.aplicaDescuento = false
+        }
+      },
+      cambioInputPrecio(){
+        if(this.form.nombre != '' && this.form.descripcion != '' && this.form.precio != '' && this.form.categoria != null && this.form.cantidad != '' && this.nombreColor != null && this.nombreColor != ''){
+          this.activoBtnRegistrar = false;
+          if(this.form.aplicaDescuento === true){
+            if(this.form.descuento.desde != '' && this.form.descuento.hasta != '' && this.form.descuento.montoDescuento != ''){
+              this.activoBtnRegistrar = false; //DISABLED="FALSE" --> BTN HABILITADO
+            }
+            else{
+              this.activoBtnRegistrar = true; //DISABLED="TRUE" --> BTN DESHABILITADO
+            }
+          }
+          else{
+            this.activoBtnRegistrar = false; //DISABLED="FALSE" --> BTN HABILITADO
+          }
+        }
+        else{
+          this.activoBtnRegistrar = true;
+        }
+
+        //#region HABILITAR EL BOTON DE DESCUENTO EN CASO DE HABER INGRESADO UN PRECIO, SE NO HABERLO
+        if(this.form.precio != ''){
+          this.descuentoHabilitado = false; //DISABLED="FALSE" --> BTN HABILITADO
+        }
+        else{
+          this.descuentoHabilitado = true; //DISABLED="TRUE" --> BTN DESHABILITADO
+          this.form.descuento.tipoPorcentaje = true;
+          this.form.descuento.tipoMonto = false;
+          this.form.descuento.desde = '';
+          this.form.descuento.hasta = '';
+          this.form.descuento.montoDescuento = '';
+          this.form.descuento.porcentajeDescuento = '';
+          this.form.aplicaDescuento = false;
+        }
+      },
+      cambioTipoDescuento(){
+        this.form.descuento.tipoPorcentaje = !this.form.descuento.tipoPorcentaje;
+        this.form.descuento.tipoMonto = !this.form.descuento.tipoMonto;
+        this.form.descuento.montoDescuento = '';
+        this.form.descuento.porcentajeDescuento = '';
+        this.activoBtnRegistrar = true; //DISABLED="FALSE" --> BTN DESHABILITADO
+      },
+      cambioDescuentoPorc(e){
+        if(parseFloat(this.form.descuento.porcentajeDescuento) > parseFloat(e.target.max)){
+          alert(`El porcentaje de descuento no puede exceder el ${e.target.max}%`);
+          this.form.descuento.porcentajeDescuento = '';
+        }
+        else{
+          this.form.descuento.montoDescuento = (this.form.precio * (this.form.descuento.porcentajeDescuento / 100)).toFixed(1)
+        }
+        if(this.form.nombre != '' && this.form.descripcion != '' && this.form.precio != '' && this.form.categoria != null && this.form.cantidad != '' && this.form.descuento.porcentajeDescuento != '' && this.nombreColor != null && this.nombreColor != ''){
+          if(this.form.descuento.desde === "" || this.form.descuento.hasta === ""){
+            this.activoBtnRegistrar = true; //DISABLED="TRUE" --> BTN DESHABILITADO
+          }
+          else{
+            this.activoBtnRegistrar = false; //DISABLED="TRUE" --> BTN HABILITADO
+          }  
+        }
+        else{
+            this.activoBtnRegistrar = true;
+        }
+      },
+      cambioDescuentoMonto(e){
+        if(parseFloat(this.form.descuento.montoDescuento) > parseFloat(e.target.max)){
+          alert(`El monto de descuento no puede exceder los ${e.target.max} CLP`);
+          this.form.descuento.montoDescuento = '';
+        }
+        else{
+          this.form.descuento.porcentajeDescuento = ((this.form.precio - (this.form.precio - this.form.descuento.montoDescuento)) / this.form.precio) * 100
+          console.log(this.form)
+        }
+        
+        if(this.form.nombre != '' && this.form.descripcion != '' && this.form.precio != '' && this.form.categoria != null && this.form.cantidad != '' && this.form.descuento.montoDescuento != '' && this.nombreColor != null && this.nombreColor != ''){
+          if(this.form.descuento.desde === "" || this.form.descuento.hasta === ""){
+            this.activoBtnRegistrar = true; //DISABLED="TRUE" --> BTN DESHABILITADO
+          }
+          else{
+            this.activoBtnRegistrar = false; //DISABLED="TRUE" --> BTN HABILITADO
+          }  
+        }
+        else{
+            this.activoBtnRegistrar = true;
+        }
+      },
+      cambioAplicaDescuento(){
+        this.form.aplicaDescuento = !this.form.aplicaDescuento;
+        if(this.form.aplicaDescuento === false){
+          this.form.descuento.desde = ''
+          this.form.descuento.hasta = ''
+          this.form.descuento.tipoPorcentaje = true
+          this.form.descuento.tipoMonto = false
+          this.form.descuento.montoDescuento = ''
+          this.form.descuento.porcentajeDescuento = ''
+          this.cambioInputPrecio()
+        }
+        else{
+          this.activoBtnRegistrar = true; //DISABLED="FALSE" --> BTN DESHABILITADO
+        }
+      },
+      guardarImagenes(imagenes, archivos, idCarpeta, color, arrayColores){
+// console.log({arrayColores})
+// console.log({archivos})
+        // return
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+if (arrayColores !== null){
+        let aniadir = true
+        arrayColores.forEach( item => {
+          if(item.nombre === color.nombre){
+            aniadir = false
+          }
+        })
+
+        if (color !== '') { aniadir === true ? arrayColores.push(color) : arrayColores = null; }
+        else{ arrayColores = null; }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        var codigoCarpeta = idCarpeta
+        if(color != ''){
+          idCarpeta = `${idCarpeta}/${color.nombre}`
+        }
+        var mountainsRef = firebase.storage().ref().child(`/productos/${idCarpeta}`)
+// console.log({mountainsRef})
+        mountainsRef.listAll()
+        .then(function (result) {
+          // console.log('MONSCA')
+          // console.log({result})
+          if(result.items.length > 0){
+            result.items.forEach(function (file) {
+              file.delete()
+            })
+          }
+        })
+        .then(async function guardado() {
+          var arregloUrls = []
+          for (let index = 0; index < archivos.length; index++) {
+// console.log(archivos[index].name);
+            const dato = await firebase.storage().ref(`/productos/${idCarpeta.replace(/ /g,'_')}/${archivos[index].name}`).put(archivos[index])
+            var getToken = await axios.get(`https://firebasestorage.googleapis.com/v0/b/meatiende.appspot.com/o/${dato.metadata.fullPath.replace(/\//g,'%2F')}`)
+            arregloUrls.push(`${idCarpeta.replace(/\//g, '%2F')}%2F${dato.ref.name}?alt=media&token=${getToken.data.downloadTokens}`)
+          }
+// console.log(arregloUrls)
+          var data =  { idProducto: codigoCarpeta, imagenes: arregloUrls, color:arrayColores }
+
+          axios.post(`${this.url}guardarImagenes`, data, { headers: {'content-type':'application/json'} }).then(function(resp, err){
+            this.$bvModal.hide('modalProducto');
+            if(!err){
+              this.enlacesUrl = []
+            }
+            else{
+              console.log(err)
+            }
+          }.bind(this))
+        }.bind(this))
+      }
+    },   
+    watch:{
+      'arrayImagenes': function (nv, ov) {
+        // console.log(nv);
+        this.formatNames(nv)
+        // if(nv.length > 0){
+        //   var arregloImagenes = []
+        //   var convertido;
+        //   const toBase64 = file => new Promise((resolve, reject) => {
+        //     const reader = new FileReader();
+        //     reader.readAsDataURL(file);
+        //     reader.onload = () => resolve(reader.result);
+        //     reader.onerror = error => reject(error);
+        //   });
+        //   async function convert_Base64(){
+        //     for(var t = 0; t < nv.length; t++){
+        //       convertido = (await toBase64(nv[t]));
+        //       arregloImagenes.push({ id:nv[t].name, src:convertido, thumbnail:convertido })
+        //     }
+        //   }
+        //   convert_Base64()
+        //   this.arrayImagenes_ = arregloImagenes  
+        // }
+      },
+      producto(nuevo){
+          this.descuentoHabilitado = false;
+          this.form.nombre = nuevo.nombre;
+          this.form.descripcion = nuevo.descripcion;
+          this.form.categoria = nuevo.categoria;
+          this.form.precio = nuevo.precio;
+          this.form.cantidad = nuevo.cantidad;
+          this.form.nombreImags = nuevo.nombreImagenes;
+          this.form.idProducto = nuevo._id;
+          if(nuevo.aplicaDescuento){
+            this.form.aplicaDescuento = nuevo.aplicaDescuento;
+            this.form.descuento.desde = nuevo.descuento.desde;
+            this.form.descuento.hasta = nuevo.descuento.hasta;
+            this.form.descuento.tipoPorcentaje = nuevo.descuento.tipoPorcentaje;
+            this.form.descuento.tipoMonto = nuevo.descuento.tipoMonto;
+            this.form.descuento.montoDescuento = nuevo.descuento.montoDescuento;
+            this.form.descuento.porcentajeDescuento = nuevo.descuento.porcentajeDescuento;
+          }
+          else{
+            this.form.aplicaDescuento = false;
+            this.form.descuento.desde = ''
+            this.form.descuento.hasta = ''
+            this.form.descuento.tipoPorcentaje = true
+            this.form.descuento.tipoMonto = false
+            this.form.descuento.montoDescuento = ''
+            this.form.descuento.porcentajeDescuento = ''
+          }
+          ////////////////////////////////////////////////////////////////////////////////
+          ////////////////////////////////////////////////////////////////////////////////
+          this.arrayImagenes_ = []
+          this.form.nombreImags.map(function(e){
+            this.arrayImagenes_.push({ id:e, src:`${urlImagen}/${this.form.idProducto}/${e}`, thumbnail:`${urlImagen}/${this.form.idProducto}/${e}` })
+          }.bind(this))
+          // this.arrayImagenes_ = nuevo.dataImagenes;
+          ////////////////////////////////////////////////////////////////////////////////
+          ////////////////////////////////////////////////////////////////////////////////
+          if(this.form.nombre != ''){
+            this.activoBtnRegistrar = false;
+          }
+      },
+      'categorias': function(nv, ov) {   /// STORE.JS
+        this.options = nv.map(function(obj){
+          return { 'value':obj._id, 'text':obj.nombre };
+        });
+      }
+    }
+}
+</script>
+
+<style>
+#circuloColor{
+  height:30px!important;
+  width:50px!important;
+  border-radius: 3px;
+  background-color:red;
+  border:1px solid rgb(95, 92, 92)!important;
+  float:right!important;
+}
+    .preloader {
+      position: relative!important;
+      width: 46px;
+      height: 46px;
+      border: 8px solid #eee;
+      border-top: 8px solid #047857;
+      border-radius: 50%;
+      left: 340px!important;
+      animation-name: girar;
+      animation-duration: 1.5s;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+  }
+  @keyframes girar {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .container{
+    margin-top: 0px!important;
+  }
+  .custom-control-label, .lbl{
+    font-size: 14px!important;
+  }
+  .input-group-prepend,.input-group-text{
+    width: 41px!important;
+  }
+  .input-group-prepend{
+    text-align: center;
+  }
+  .b-custom-control-lg > label.custom-control-label{
+    padding-top: 4px!important;
+  }
+  #modalProducto___BV_modal_content_{
+    border-width: 0px!important;
+  }
+  #modalProducto___BV_modal_title_{
+    padding-top: 5px!important;
+  }
+</style>
